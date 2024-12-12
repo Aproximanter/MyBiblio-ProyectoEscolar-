@@ -1,0 +1,171 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "71a7fb71",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pyAgrum as gum"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b120f065",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Creamos la red bayesiana\n",
+    "bn=gum.BayesNet()\n",
+    "#Agregamos la estructura de los nodos\n",
+    "d=bn.add(gum.LabelizedVariable(\"Deporte\",\"Deporte\",[\"si\",\"no\"]))\n",
+    "a=bn.add(gum.LabelizedVariable(\"Alimentacion\",\"Alimentacion\",[\"Equilibrada\",\"noEquilibrada\"]))\n",
+    "s=bn.add(gum.LabelizedVariable(\"Sanguinea\",\"Presion Sanguinea\",[\"alta\",\"normal\"]))\n",
+    "f=bn.add(gum.LabelizedVariable(\"Fumador\",\"Fumador\",[\"si\",\"no\"]))\n",
+    "i=bn.add(gum.LabelizedVariable(\"Infarto\",\"Infarto\",[\"si\",\"no\"]))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "613eedfb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Agregamos las Aristas\n",
+    "bn.addArc(a,s)\n",
+    "bn.addArc(d,s)\n",
+    "bn.addArc(s,i)\n",
+    "bn.addArc(f,i)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9542fce2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#importamos biblioteca para poder ejecutar en notebook\n",
+    "import pyAgrum.lib.notebook as gnb"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4b066bf6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Damos los valores de probabilidad de que sucedan las cosas\n",
+    "bn.cpt(d).fillWith([0.1,0.9])\n",
+    "bn.cpt(a).fillWith([0.85,0.15])\n",
+    "bn.cpt(f).fillWith([0.83,0.17])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ac113d6e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#damos valores a sanguineo, tomando en cuenta que requiere de la informaci'on de los nodos de alimentacion y deporte\n",
+    "bn.cpt(s)[{\"Alimentacion\":\"Equilibrada\",\"Deporte\":\"si\"}]=[0.01,0.99]\n",
+    "bn.cpt(s)[{\"Alimentacion\":\"noEquilibrada\",\"Deporte\":\"si\"}]=[0.2,0.8]\n",
+    "bn.cpt(s)[{\"Alimentacion\":\"Equilibrada\",\"Deporte\":\"no\"}]=[0.25,0.75]\n",
+    "bn.cpt(s)[{\"Alimentacion\":\"noEquilibrada\",\"Deporte\":\"no\"}]=[0.7,0.3]\n",
+    "bn.cpt(s)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e8091157",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#llenamos los valores de infarto, dados los valores de sanguineo y fumador\n",
+    "bn.cpt(i)[{'Sanguinea':'alta','Fumador':'si'}]=[0.8,0.2]\n",
+    "bn.cpt(i)[{'Sanguinea':'normal','Fumador':'si'}]=[0.6,0.4]\n",
+    "bn.cpt(i)[{'Sanguinea':'alta','Fumador':'no'}]=[0.7,0.3]\n",
+    "bn.cpt(i)[{'Sanguinea':'normal','Fumador':'no'}]=[0.3,0.7]\n",
+    "bn.cpt(i)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9e52b924",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#hacemos una inferencia exacta\n",
+    "ie=gum.LazyPropagation(bn)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9696129f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#consulta 1\n",
+    "#calculamos la probabilidad de alimentaci'on, dado que tuvo un infarto y la presion sanguinea es alta\n",
+    "ie.setEvidence({\"Infarto\":\"si\",\"Sanguinea\":\"alta\"})\n",
+    "ie.makeInference()\n",
+    "ie.posterior(a)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9ad4992a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#calculamos la probabilidad de infarto dada la presion sanguinea alta\n",
+    "ie.setEvidence({\"Sanguinea\":\"alta\"})\n",
+    "ie.makeInference()\n",
+    "ie.posterior(i)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "887935b9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#calculamos la probabilidad de infarto dada la presion sanguinea alta, alimentacion equilibrada y fumador\n",
+    "ie.setEvidence({\"Sanguinea\":\"alta\",\"Alimentacion\":\"Equilibrada\",\"Fumador\":\"si\"})\n",
+    "ie.makeInference()\n",
+    "ie.posterior(i)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
